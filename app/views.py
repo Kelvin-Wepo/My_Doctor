@@ -1,21 +1,41 @@
 from django.views.generic import TemplateView
 from django.contrib.auth import login, authenticate
 from django.shortcuts import render, redirect
-from MyDoc import settings
 from app.forms import SignUpForm, AddDoctorForm, AppointmentForm
 from django.views import generic
 from app.models import AddDoctor, Appointment
 from django.views.generic import DetailView
 from django.urls import reverse_lazy
 from django.views.generic.edit import DeleteView
-import requests
+import africastalking 
+
 
 class HomePageView(TemplateView) :
 	template_name = 'index.html'
 class PaymentPageView(TemplateView):
     template_name = 'payment.html'
+
+
+
 class PaymentConfirmPageView(TemplateView):
     template_name = 'confirmation.html'
+
+africastalking.initialize(
+    username='valeria',
+    api_key='a91bf656d1ef72542dcbfe7b650e1263c08616ca9a71bf32f304699541cf86ce'
+)
+
+def app(request):
+     if request.method == 'POST':
+        message = "Thank you for booking an Appointment with us."
+        phone = "+254714805460"  
+        sms = africastalking.SMS
+
+        response = sms.send(message, [phone])
+        print(response)  # You can handle the response here
+
+        return render(request, 'app.html')  # Adjust the template name as needed
+
 class BookPageView(TemplateView):
     template_name = 'app.html'
 
@@ -79,43 +99,5 @@ class AppointmentDelete(DeleteView):
     template_name = 'delete_app.html'
     success_url = reverse_lazy('profile')
 
-def AddAppointment(request):
-    if request.method == 'POST':
-        form = AppointmentForm(request.POST, request.FILES)
-        if form.is_valid():
-            appointment = form.save()  # Save the form data
-
-            # Sending SMS
-            username = settings.AFRICAS_TALKING_USERNAME
-            api_key = settings.AFRICAS_TALKING_API_KEY
-            sender = "Daktari Wangu Online"
-            message = f"Thank you for booking an appointment with us."
-            phone_number = appointment.phone_number  # Update with the appropriate field name
-
-            # Prepare the API endpoint URL
-            sms_url = "https://developers.africastalking.com/tutorials/messaging-101-sending-an-sms/l/null/delivery-reports"
-
-            headers = {
-                "ApiKey": api_key,
-                "Content-Type": "application/x-www-form-urlencoded",
-            }
-
-            data = {
-                "username": username,
-                "to": phone_number,
-                "message": message,
-                "from": sender,
-            }
-
-            response = requests.post(sms_url, headers=headers, data=data)
-
-            if response.status_code == 201:
-                return redirect('payment')
-            else:
-                # Handle SMS sending error
-                pass
-
-    else:
-        form = AppointmentForm()
-    return render(request, 'app.html', {'form': form})
+    
 
